@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAMARO</title>
+</head>
+
+<body>
+    <canvas id="glcanvas" width="800" height="600"></canvas>
+    <p style="position: absolute; top: 10px; left: 820px;"><strong><i>
+        **Hold and Drag Mouse Left Button to Rotate The Object on Any Axis**
+    </i></strong></p>
+    <p style="position: absolute; top: 30px; left: 820px;"><strong><i>
+        **Press The Button to See The Object as LINE_LOOP Representation**
+    </i></strong></p>
+    <button id="btn" style="position: absolute; top: 80px; left: 820px;">Show as Lines</button>
+    
+    <!-- <img id="texture" src="res/camaro-texture.png" hidden> -->
+</body>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    attribute vec4 vNormal;
+    
+    attribute vec2 vTexture;
+    varying vec2 fTexture;
+
+    uniform mat4 mWorld;
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+
+	uniform vec4 lightPosition;
+	varying vec3 L, E, N;
+   
+    void main() {
+		vec3 pos = -(mWorld * vPosition).xyz;
+		vec3 light = lightPosition.xyz;
+        L = normalize(light - pos);
+        E = -pos;
+        N = normalize(mWorld * vNormal).xyz;
+
+        fTexture = vTexture;
+        gl_Position = projectionMatrix * modelViewMatrix * mWorld * vPosition;
+    }
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment"> 
+	precision mediump float;
+
+	varying vec2 fTexture;
+	uniform sampler2D sampler;
+
+	uniform vec4 ambientProduct;
+	uniform vec4 diffuseProduct;
+	uniform vec4 specularProduct;
+	uniform float shininess;
+	varying vec3 L, E, N;
+
+	void main() {
+		vec4 fColor;
+		vec3 H = normalize(L + E);
+		vec4 ambient = ambientProduct;
+        float diffuseCosAngle = max( dot(L, N), 0.0);
+        vec4 diffuse = diffuseCosAngle * diffuseProduct;
+
+        float specularCosAngle = pow( max( dot(N, H), 0.0 ), shininess );
+        vec4 specular = specularCosAngle * specularProduct;
+
+        if (dot(L, N) < 0.0)
+            specular = vec4(0.0, 0.0, 0.0, 1.0);
+
+        fColor = ambient + diffuse + specular;
+		fColor.a = 1.0;
+		
+		gl_FragColor = fColor * texture2D(sampler, fTexture).bgra;
+	}
+</script>
+
+<script src="initShaders.js"></script>
+<script src="MV.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="camaro.js"></script>
+
+</html>
